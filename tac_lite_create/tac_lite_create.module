@@ -62,7 +62,9 @@ function tac_lite_create_form_alter(&$form, FormStateInterface $form_state, $for
         // name => vocabulary machine name.
         $field_settings = $field->getSettings();
         $vocabs = $field_settings['handler_settings']['target_bundles'];
-        $term_fields[$field->getName()] = reset($vocabs);
+        if ($vocabs) {
+          $term_fields[$field->getName()] = reset($vocabs);
+        }
       }
     }
     // Now that we have the names of the fields,
