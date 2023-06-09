@@ -173,7 +173,7 @@ class SchemeForm extends ConfigFormBase {
    */
   public static function tacLiteTermSelect($v, $default_values = []) {
     $tree = \Drupal::service('entity_type.manager')->getStorage('taxonomy_term')->loadTree($v->get('vid'));
-    $options = [0 => '<none>'];
+    $options = [-1 => '<all>', 0 => '<none>'];
     if ($tree) {
       foreach ($tree as $term) {
         $choice = new \stdClass();
