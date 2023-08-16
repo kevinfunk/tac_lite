@@ -139,9 +139,9 @@ function tac_lite_node_get_terms($node) {
             // We need to term to determine the vocabulary id.
             if (!empty($item['target_id'])) {
               $term = Term::load($item['target_id']);
-            }
-            if ($term) {
-              $terms[$node->id()][$term->bundle()][$term->id()] = $term;
+              if ($term) {
+                $terms[$node->id()][$term->bundle()][$term->id()] = $term;
+              }
             }
           }
         }
