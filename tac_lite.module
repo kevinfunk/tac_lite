@@ -4,6 +4,7 @@
  * Control access to site content based on taxonomy, roles and users.
  */
 
+use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Entity\ContentEntityTypeInterface;
@@ -181,26 +182,22 @@ function _tac_lite_user_tids($account, $scheme) {
   // when they were created. By adding 0 to the grant id, we let the
   // user view those nodes.
   $grants = [0];
+  $settings = \Drupal::config('tac_lite.settings');
   $data = \Drupal::service('user.data')->get('tac_lite', $account->id(), 'tac_lite_scheme_' . $scheme) ?: [];
   if (count($data)) {
     foreach ($data as $tids) {
-      if (count($tids)) {
-        $grants = array_merge($grants, $tids);
-      }
+      $grants = _tac_lite_process_tids($settings, $grants, $tids);
     }
   }
 
   // Add per-role grants in addition to per-user grants.
-  $settings = \Drupal::config('tac_lite.settings');
   $defaults = $settings->get('tac_lite_grants_scheme_' . $scheme);
   $defaults = $defaults ? $defaults : [];
   $roles = $account->getRoles();
   foreach ($roles as $rid) {
     if (isset($defaults[$rid]) && count($defaults[$rid])) {
       foreach ($defaults[$rid] as $tids) {
-        if (count($tids)) {
-          $grants = array_merge($grants, $tids);
-        }
+        $grants = _tac_lite_process_tids($settings, $grants, $tids);
       }
     }
   }
@@ -214,6 +211,28 @@ function _tac_lite_user_tids($account, $scheme) {
   unset($grants['']);
   return $grants;
 }
+
+/**
+ * Processes configured term IDs.
+ */
+function _tac_lite_process_tids(ImmutableConfig $settings, array $grants, array $tids) {
+  if (count($tids)) {
+    if (isset($tids[-1])) {
+      // Handle the "<all>" option.
+      unset($tids[-1]);
+      $vids = $settings->get('tac_lite_categories') ? array_keys($settings->get('tac_lite_categories')) : NULL;
+      if ($vids) {
+        $taxonomy_term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        foreach ($vids as $vid) {
+          $term_ids = array_keys($taxonomy_term_storage->loadByProperties(['vid' => $vid]));
+          $tids = array_merge($tids, array_combine($term_ids, $term_ids));
+        }
+      }
+    }
+  }
+  return array_merge($grants, $tids);
+}
+
 /**
  * Implements hook_query_TAG_alter().
  */
