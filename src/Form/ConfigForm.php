@@ -51,6 +51,16 @@ class ConfigForm extends ConfigFormBase {
         '#multiple' => TRUE,
         '#required' => TRUE,
       ];
+      $form['tac_lite_display'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Display settings'),
+        '#options' => [
+          'checkboxes' => $this->t('Checkboxes'),
+          'select' => $this->t('Select'),
+        ],
+        '#default_value' => $settings->get('tac_lite_display'),
+        '#description' => $this->t('Display settings for selecting taxonomies.'),
+      ];
       $scheme_options = [];
       // Currently only view, edit, delete permissions possible, so 7
       // permutations will be more than enough.
@@ -88,6 +98,7 @@ class ConfigForm extends ConfigFormBase {
     // Change configuration.
     $this->config('tac_lite.settings')
       ->set('tac_lite_categories', $form_state->getValue('tac_lite_categories'))
+      ->set('tac_lite_display', $form_state->getValue('tac_lite_display'))
       ->set('tac_lite_schemes', $form_state->getValue('tac_lite_schemes'))
       ->save();
 

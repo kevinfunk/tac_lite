@@ -192,4 +192,30 @@ class SchemeForm extends ConfigFormBase {
     return $field_array;
   }
 
+  /**
+   * Helper function to build a taxonomy term checkbox element for a form.
+   *
+   * @param object $v
+   *   A vocabulary object containing a vid and name.
+   * @param array $default_values
+   *   An array of values to use for the default_value argument for this
+   *   form element.
+   */
+  public static function tacLiteTermCheckboxes($v, $default_values = []) {
+    $tree = \Drupal::service('entity_type.manager')->getStorage('taxonomy_term')->loadTree($v->get('vid'));
+    $options = [];
+    if ($tree) {
+      foreach ($tree as $term) {
+        $options[$term->tid] = str_repeat('-', $term->depth) . $term->name;
+      }
+    }
+    $field_array = [
+      '#type' => 'checkboxes',
+      '#title' => $v->get('name'),
+      '#default_value' => $default_values,
+      '#options' => $options,
+    ];
+      return $field_array;
+  }
+
 }

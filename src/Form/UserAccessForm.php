@@ -38,6 +38,7 @@ class UserAccessForm extends ConfigFormBase {
     $vocabularies = Vocabulary::loadMultiple();
     $config = \Drupal::config('tac_lite.settings');
     $vids = $config->get('tac_lite_categories');
+    $display = $config->get('tac_lite_display');
     $schemes = $config->get('tac_lite_schemes');
     if (count($vids)) {
       for ($i = 1; $i <= $schemes; $i++) {
@@ -62,7 +63,12 @@ class UserAccessForm extends ConfigFormBase {
             if (!empty($data) && $data[$vid]) {
               $default_values = $data[$vid];
             }
-            $form['tac_lite'][$config['realm']][$vid] = SchemeForm::tacLiteTermSelect($v, $default_values);
+            if ($display == 'checkboxes') {
+              $form['tac_lite'][$config['realm']][$vid] = SchemeForm::tacLiteTermCheckboxes($v, $default_values);
+            }
+            else {
+              $form['tac_lite'][$config['realm']][$vid] = SchemeForm::tacLiteTermSelect($v, $default_values);
+            }
             $form['tac_lite'][$config['realm']][$vid]['#description']
               = $this->t('Grant permission to this user by selecting terms.  Note that permissions are in addition to those granted based on user roles.');
           }
