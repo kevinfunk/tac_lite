@@ -15,6 +15,7 @@ use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 use Drupal\tac_lite\Form\SchemeForm;
 use Drupal\taxonomy\Entity\Term;
+use Drupal\user\UserInterface;
 
 /**
  * Implements hook_help().
@@ -86,19 +87,19 @@ function tac_lite_node_access_records(NodeInterface $node) {
     return $grants;
   }
 }
+
 /**
  * Gets terms from a node that belong to vocabularies selected.
  */
-function _tac_lite_get_terms($node) {
+function _tac_lite_get_terms($entity) {
   $tids = [];
   // Get the vids that tac_lite cares about.
   $config = \Drupal::config('tac_lite.settings');
   $vids = $config->get('tac_lite_categories') ? array_keys($config->get('tac_lite_categories')) : NULL;
   if ($vids) {
-
     // Load all terms found in term reference fields.
     // This logic should work for all nodes (published or not).
-    $terms_by_vid = tac_lite_node_get_terms($node);
+    $terms_by_vid = tac_lite_entity_get_terms($entity);
     if (!empty($terms_by_vid)) {
       foreach ($vids as $vid) {
         if (!empty($terms_by_vid[$vid])) {
@@ -112,7 +113,7 @@ function _tac_lite_get_terms($node) {
   elseif (\Drupal::currentUser()->hasPermission('administer tac_lite')) {
     \Drupal::messenger()->addStatus(t('tac_lite.module enabled, but not <a href=:admin_url>configured</a>. No tac_lite terms associated with :title.', [
       ':admin_url' => Url::fromRoute('tac_lite.administration')->toString(),
-      ':title' => $node->getTitle(),
+      ':title' => $entity->label(),
     ]
     ));
   }
@@ -121,12 +122,12 @@ function _tac_lite_get_terms($node) {
 /**
  * We organize our data structure by vid and tid.
  */
-function tac_lite_node_get_terms($node) {
+function tac_lite_entity_get_terms($entity) {
   $terms = &drupal_static(__FUNCTION__);
-  $nid = $node->id();
+  $nid = $entity->id();
   if (!isset($terms[$nid])) {
     // Get fields of all node.
-    $fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', $node->getType());
+    $fields = $entity->getFieldDefinitions();
     // Get tids from all taxonomy_term_reference fields.
     foreach ($fields as $field_name => $field) {
       $field_type = method_exists($field, 'getType') ? $field->getType() : NULL;
@@ -134,21 +135,21 @@ function tac_lite_node_get_terms($node) {
       // Get all terms, regardless of language, associated with the node.
       if ($field_type == 'entity_reference' && $target_type == 'taxonomy_term') {
         $field_name = $field->get('field_name');
-        if ($items = $node->get($field_name)->getValue()) {
+        if ($items = $entity->get($field_name)->getValue()) {
           foreach ($items as $item) {
             // We need to term to determine the vocabulary id.
             if (!empty($item['target_id'])) {
               $term = Term::load($item['target_id']);
             }
             if ($term) {
-              $terms[$node->id()][$term->bundle()][$term->id()] = $term;
+              $terms[$entity->id()][$term->bundle()][$term->id()] = $term;
             }
           }
         }
       }
     }
   }
-  return isset($terms[$node->id()]) ? $terms[$node->id()] : FALSE;
+  return $terms[$entity->id()] ?? FALSE;
 }
 /**
  * Implements hook_node_grants().
@@ -331,5 +332,38 @@ function tac_lite_entity_type_alter(array &$entity_types) {
     // Content entities don't provide a way for us to add items to the list, so
     // we have to replace it in its entirety.
     $term_entity_type->set('list_cache_contexts', array_unique($list_contexts));
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update().
+ *
+ * Get all terms associated with user and update tac lite
+ * config realm with applicable vid to tid mappings.
+ */
+function tac_lite_user_update(UserInterface $user) {
+  $uid = $user->id();
+
+  $settings = \Drupal::config('tac_lite.settings');
+  $vids = $settings->get('tac_lite_categories');
+  $schemes = $settings->get('tac_lite_schemes');
+  $user_terms = _tac_lite_get_terms($user);
+
+  if (count($vids)) {
+    for ($i = 1; $i <= $schemes; $i++) {
+      $config = SchemeForm::tacLiteConfig($i);
+      $values = [];
+      if ($config['name']) {
+        foreach ($vids as $vid) {
+          $terms = \Drupal::service('entity_type.manager')->getStorage('taxonomy_term')->loadTree($vid);
+          $tids = [];
+          foreach ($terms as $term) {
+            $tids[] = $term->tid;
+          }
+          $values[$vid] = array_intersect($user_terms, $tids);
+        }
+        \Drupal::service('user.data')->set('tac_lite', $uid, $config['realm'], $values);
+      }
+    }
   }
 }
