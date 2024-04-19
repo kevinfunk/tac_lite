@@ -220,7 +220,7 @@ function _tac_lite_user_tids($account, $scheme) {
 function tac_lite_query_term_access_alter(AlterableInterface $query) {
   $account = \Drupal::currentUser();
   // If this user has administer rights, don't filter.
-  if (\Drupal::currentUser()->hasPermission('administer tac_lite')) {
+  if ($account->hasPermission('administer tac_lite') || $account->hasPermission('administer tac_lite user access')) {
     return;
   }
   // Get our vocabularies and schemes from variables. Return if we have none.

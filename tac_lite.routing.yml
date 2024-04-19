@@ -12,7 +12,7 @@ tac_lite.user_access:
     _form: '\Drupal\tac_lite\Form\UserAccessForm'
     _title: 'Access by Taxonomy'
   requirements:
-    _permission: 'administer tac_lite'
+    _permission: 'administer tac_lite user access'
     _entity_access: 'user.view'
     user: \d+
 
