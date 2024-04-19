@@ -1,0 +1,9 @@
+administer tac_lite:
+  title: Adminster Tac Lite
+  description: Access the Tac Lite administration pages
+  restrict access: true
+
+administer tac_lite user access:
+  title: Adminster Tac Lite user access
+  description: Manage the per user access based on taxonomy terms
+  restrict access: true
