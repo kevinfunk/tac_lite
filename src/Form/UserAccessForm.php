@@ -14,12 +14,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class UserAccessForm extends ConfigFormBase {
 
-    /**
-   * The user ID.
+  /**
+   * The user id.
    *
-   * @var int|null
+   * @var string|int|null
    */
-  protected $uid;  
+  protected $uid;
 
   /**
    * {@inheritdoc}
@@ -33,23 +33,15 @@ class UserAccessForm extends ConfigFormBase {
   public function getEditableConfigNames() {
     return ['tac_lite.settings'];
   }
-    /**
-   * Constructs a UserAccessForm object.
-   *
-   * @param \Drupal\user\UserInterface|null $user
-   *   The user object.
-   */
-  public function __construct(UserInterface $user = NULL) {
-    $this->uid = $user ? $user->id() : NULL;
-  }
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
     if (!$user) {
       throw new NotFoundHttpException();
     }
 
+    $this->uid = $user->id();
     $vocabularies = Vocabulary::loadMultiple();
     $config = \Drupal::config('tac_lite.settings');
     $vids = $config->get('tac_lite_categories');
