@@ -260,6 +260,7 @@ function tac_lite_query_term_access_alter(AlterableInterface $query) {
     $or = new Condition('OR');
     $or->condition($primary_table . '.tid', $tids, 'IN');
     $or->condition('tac_td.vid', $vids, 'NOT IN');
+    $or->isNull('tac_td.tid');
     $query->condition($or);
 
     _tac_lite_apply_cache_contexts_to_render_context($visibility_scheme_ids);
