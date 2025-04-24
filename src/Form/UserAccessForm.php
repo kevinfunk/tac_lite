@@ -15,6 +15,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class UserAccessForm extends ConfigFormBase {
 
   /**
+   * The user id.
+   *
+   * @var string|int|null
+   */
+  protected $uid;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
